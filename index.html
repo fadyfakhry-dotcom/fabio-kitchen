@@ -570,6 +570,8 @@ function makeApi() {
     kids: async (kid) => check(await sb.from('fk_kids').select('id,name,birth_date,notes').eq('kitchen_id', kid).order('birth_date')),
     addKid: async (kid, k) => check(await sb.from('fk_kids').insert({ ...k, kitchen_id: kid })),
     removeKid: async (id) => check(await sb.from('fk_kids').delete().eq('id', id)),
+    kidPlans: async (id) => ((check(await sb.from('fk_kids').select('plans').eq('id', id)))[0] || {}).plans || {},
+    saveKidPlans: async (id, plans) => check(await sb.from('fk_kids').update({ plans }).eq('id', id)),
     ai: async (body) => {
       const { data, error } = await sb.functions.invoke('fk-ai', { body });
       if (!error) return data;
@@ -952,16 +954,21 @@ function showKidMeals(k, fasting, res, btn) {
     res.tips.length ? el('div', { class: 'note ok' }, el('b', {}, 'نصايح: '), res.tips.join(' · ')) : null));
 }
 function suggestKid(k, fasting, btn, fresh) {
-  const ck = kidCacheKey(k, fasting);
-  if (!fresh) {
-    try { const c = JSON.parse(localStorage.getItem(ck) || 'null'); if (c) { msg('kids-msg', ''); showKidMeals(k, fasting, normalizeKidMeals(c), btn); return; } } catch { /* no cache */ }
-  }
+  const ck = kidCacheKey(k, fasting), slot = fasting ? 'fast' : 'normal';
   $('kids-out').replaceChildren(el('div', { class: 'empty' }, el('span', { class: 'spinner' }), ' بنجهّز أكل مناسب لـ ' + k.name + '...'));
   busy(btn, async () => {
     try {
-      const r = await api.ai({ action: 'kids', kid_id: k.id, fasting });
-      const res = normalizeKidMeals(r);
+      // the plan lives with the kitchen, so everyone in the house sees the same one
+      let plans = {};
+      try { plans = (await withTimeout(api.kidPlans(k.id), 8000)) || {}; } catch { /* offline: fall back to this phone */ }
+      if (!fresh) {
+        let saved = plans[slot];
+        if (!saved) { try { saved = JSON.parse(localStorage.getItem(ck) || 'null'); } catch { /* no cache */ } }
+        if (saved) { msg('kids-msg', ''); showKidMeals(k, fasting, normalizeKidMeals(saved), btn); return; }
+      }
+      const res = normalizeKidMeals(await api.ai({ action: 'kids', kid_id: k.id, fasting }));
       try { localStorage.setItem(ck, JSON.stringify(res)); } catch { /* storage off */ }
+      api.saveKidPlans(k.id, { ...plans, [slot]: { ...res, made: todayISO() } }).catch(() => {});
       msg('kids-msg', '');
       showKidMeals(k, fasting, res, btn);
     } catch (e) { $('kids-out').replaceChildren(); msg('kids-msg', errText(e)); }
