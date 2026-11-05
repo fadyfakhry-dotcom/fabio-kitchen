@@ -1,0 +1,651 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Fabio Kitchen</title>
+<meta name="theme-color" content="#2E6B45">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lalezar&family=Readex+Pro:wght@400;500;600&display=swap">
+<style>
+/* Layout: one narrow kitchen-notebook column; sticky header with the three sections as tabs. */
+:root{
+  --bg:#F1F4EE; --surface:#FFFFFF; --sunk:#E6EBE2; --ink:#1B231D; --muted:#5B685E; --line:#D5DDD0;
+  --accent:#2E6B45; --accent-ink:#FFFFFF; --accent-soft:#DCEBDF; --spice:#B9531A; --spice-soft:#F7E2D4;
+  --font-display:"Lalezar","Readex Pro",system-ui,sans-serif;
+  --font-body:"Readex Pro","Segoe UI",Tahoma,system-ui,sans-serif;
+  --r:12px; color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root{--bg:#111612; --surface:#19201B; --sunk:#141A16; --ink:#E5EBE3; --muted:#9AA79D; --line:#2A342D;
+    --accent:#7CC495; --accent-ink:#0C1A10; --accent-soft:#1F3427; --spice:#F08A4B; --spice-soft:#3A2418; color-scheme:dark}
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:15px/1.65 var(--font-body);-webkit-font-smoothing:antialiased}
+[hidden]{display:none!important}
+button,input,select,textarea{font:inherit;color:inherit}
+.wrap{max-width:760px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1,h2,h3{font-family:var(--font-display);font-weight:400;line-height:1.2;margin:0;text-wrap:balance}
+h2{font-size:26px} h3{font-size:20px}
+.muted{color:var(--muted)}
+.small{font-size:13px}
+
+/* header */
+header{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:1px solid var(--line);padding-top:env(safe-area-inset-top,0px)}
+.bar{display:flex;align-items:center;gap:12px;padding-block:12px 8px}
+.brand{display:flex;flex-direction:column;align-items:flex-start;flex:1;min-width:0}
+.brand h1{font-size:28px;color:var(--accent);direction:ltr;unicode-bidi:isolate;letter-spacing:.5px;white-space:nowrap}
+.brand span{max-width:100%}
+.brand span{color:var(--muted);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tabs{display:flex;gap:4px;padding-block:0 10px;overflow-x:auto}
+.tab{flex:1;min-width:max-content;border:0;background:transparent;padding:9px 14px;border-radius:999px;cursor:pointer;color:var(--muted);font-weight:500}
+.tab[aria-selected="true"]{background:var(--accent);color:var(--accent-ink)}
+.tab:focus-visible,.btn:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,.chip:focus-visible,.dish:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+main{padding-block:20px 60px;display:grid;gap:22px}
+section.view{display:grid;gap:18px}
+
+/* controls */
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:9px 16px;cursor:pointer;font-weight:500;display:inline-flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;color:var(--ink)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.ghost{border-color:transparent;background:transparent;color:var(--muted)}
+.btn.danger{color:var(--spice);border-color:var(--spice)}
+.btn[disabled]{opacity:.55;cursor:progress}
+.btn.icon{padding:6px 10px;min-width:36px}
+label{display:grid;gap:4px;font-size:13px;color:var(--muted)}
+input,select,textarea{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:9px 12px;width:100%;min-width:0}
+textarea{min-height:96px;resize:vertical}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:end}
+.row>*{min-width:0}
+.grow{flex:1 1 180px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px;display:grid;gap:12px}
+.note{border-radius:10px;padding:10px 14px;font-size:14px}
+.note.err{background:var(--spice-soft);color:var(--spice)}
+.note.ok{background:var(--accent-soft);color:var(--accent)}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 14px;cursor:pointer;font-size:14px}
+.chip:hover{border-color:var(--accent);color:var(--accent)}
+.pill{display:inline-block;border-radius:999px;padding:1px 10px;font-size:12px;background:var(--accent-soft);color:var(--accent);white-space:nowrap}
+.pill.miss{background:var(--spice-soft);color:var(--spice)}
+.code{font-family:ui-monospace,Menlo,monospace;letter-spacing:2px;direction:ltr;unicode-bidi:isolate}
+.spinner{width:16px;height:16px;border:2px solid currentColor;border-top-color:transparent;border-radius:50%;animation:spin .8s linear infinite;display:inline-block}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.spinner{animation-duration:3s}}
+
+/* auth */
+.auth{max-width:420px;margin:8vh auto 0;display:grid;gap:18px}
+.auth .hero h1{font-size:46px;color:var(--accent);direction:ltr;text-align:right}
+.auth .hero p{margin:4px 0 0;color:var(--muted)}
+
+/* pantry */
+.cat{display:grid;gap:6px}
+.cat h3{font-size:18px;display:flex;align-items:baseline;gap:8px}
+.cat h3 small{font-family:var(--font-body);font-size:12px;color:var(--muted)}
+.items{list-style:none;margin:0;padding:0;background:var(--surface);border:1px solid var(--line);border-radius:var(--r)}
+.items li{display:flex;align-items:center;gap:10px;padding:8px 12px;border-top:1px solid var(--line)}
+.items li:first-child{border-top:0}
+.items .nm{flex:1;min-width:0;overflow-wrap:anywhere}
+.qty{display:flex;align-items:center;gap:4px;font-variant-numeric:tabular-nums}
+.qty b{min-width:64px;text-align:center;font-weight:500;font-size:14px}
+.empty{border:1.5px dashed var(--line);border-radius:var(--r);padding:22px;text-align:center;color:var(--muted)}
+.preview li{justify-content:space-between}
+
+/* plan */
+.days{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+.day{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.day h3{font-size:19px;padding:10px 14px;background:var(--sunk);border-bottom:1px solid var(--line)}
+.meal{display:grid;grid-template-columns:44px 1fr;gap:8px;align-items:center;padding:8px 14px;border-top:1px dashed var(--line)}
+.meal:first-of-type{border-top:0}
+.meal span{font-size:12px;color:var(--muted)}
+.dish{border:0;background:none;text-align:start;padding:2px 0;cursor:pointer;color:var(--ink);text-decoration:underline;text-decoration-color:var(--line);text-underline-offset:4px}
+.dish:hover{color:var(--accent);text-decoration-color:var(--accent)}
+.shop{columns:2 200px;margin:0;padding-inline-start:18px}
+
+/* recipe */
+.recipe{display:grid;gap:16px}
+.recipe header{position:static;border:0;padding:0;background:none}
+.meta{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.yt{background:#C4302B;border-color:#C4302B;color:#fff}
+.ings{list-style:none;margin:0;padding:0;display:grid;gap:2px}
+.ings li{display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px dotted var(--line)}
+.ings li>span:first-child{min-width:0;overflow-wrap:anywhere}
+.steps{margin:0;padding-inline-start:0;list-style:none;counter-reset:s;display:grid;gap:12px}
+.steps li{counter-increment:s;display:grid;grid-template-columns:32px 1fr;gap:10px;align-items:start}
+.steps li::before{content:counter(s);font-family:var(--font-display);font-size:20px;color:var(--accent);background:var(--accent-soft);border-radius:50%;width:32px;height:32px;display:grid;place-items:center;line-height:1}
+.two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.4fr);gap:18px}
+@media (max-width:640px){.two{grid-template-columns:1fr}}
+footer{padding-block:0 32px;text-align:center;font-size:12px;color:var(--muted)}
+</style>
+</head>
+<body>
+
+<!-- LOADING (visible until the script decides which screen to show) -->
+<div class="wrap" id="v-loading">
+  <div class="auth" style="text-align:center">
+    <h1 style="font-size:46px;color:var(--accent);direction:ltr">Fabio Kitchen</h1>
+    <p class="muted" id="loading-msg"><span class="spinner"></span> بيفتح...</p>
+    <button class="btn" id="b-reload" type="button" hidden onclick="location.reload()">حدّث الصفحة</button>
+  </div>
+</div>
+<script>
+(function () {
+  function stuck() {
+    var l = document.getElementById('v-loading');
+    if (!l || l.hidden) return;
+    document.getElementById('loading-msg').textContent = 'التطبيق ماعرفش يفتح. اتأكد من النت وحدّث الصفحة، ولو فضل كده افتح اللينك من Chrome.';
+    document.getElementById('b-reload').hidden = false;
+  }
+  window.addEventListener('error', stuck);
+  setTimeout(stuck, 20000);
+})();
+</script>
+
+<!-- AUTH -->
+<div class="wrap" id="v-auth" hidden>
+  <div class="auth">
+    <div class="hero"><h1>Fabio Kitchen</h1><p>مخزون البيت، وأكل الأسبوع، ووصفات الأكل المصري في مكان واحد.</p></div>
+    <form class="card" id="f-auth">
+      <h2 id="auth-title">تسجيل الدخول</h2>
+      <label>الإيميل<input id="a-email" type="email" required autocomplete="email" dir="ltr"></label>
+      <label>كلمة السر<input id="a-pass" type="password" required minlength="6" autocomplete="current-password" dir="ltr"></label>
+      <div id="auth-msg" class="note" hidden></div>
+      <button class="btn primary" id="a-submit" type="submit">دخول</button>
+      <button class="btn ghost" id="a-toggle" type="button">معندكش حساب؟ اعمل حساب جديد</button>
+    </form>
+  </div>
+</div>
+
+<!-- KITCHEN SETUP -->
+<div class="wrap" id="v-setup" hidden>
+  <div class="auth">
+    <div class="hero"><h1>Fabio Kitchen</h1><p>أول مرة؟ اعمل مطبخ لبيتك، أو ادخل مطبخ موجود بالكود اللي اتبعتلك.</p></div>
+    <form class="card" id="f-create">
+      <h3>مطبخ جديد</h3>
+      <label>اسم المطبخ<input id="k-name" placeholder="مثلاً: بيت فادي" maxlength="60"></label>
+      <button class="btn primary" type="submit">اعمل المطبخ</button>
+    </form>
+    <form class="card" id="f-join">
+      <h3>عندي كود</h3>
+      <label>كود المطبخ<input id="k-code" class="code" placeholder="A1B2C3" maxlength="6" required></label>
+      <button class="btn" type="submit">ادخل المطبخ</button>
+    </form>
+    <div id="setup-msg" class="note err" hidden></div>
+    <button class="btn ghost" data-act="logout" type="button">تسجيل خروج</button>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="v-app" hidden>
+  <header>
+    <div class="wrap">
+      <div class="bar">
+        <div class="brand"><h1>Fabio Kitchen</h1><span id="k-label"></span></div>
+        <button class="btn icon ghost" id="b-share" type="button" title="كود الدعوة">دعوة</button>
+        <button class="btn icon ghost" data-act="logout" type="button">خروج</button>
+      </div>
+      <div class="tabs" role="tablist">
+        <button class="tab" role="tab" data-tab="pantry" id="t-pantry">المخزون</button>
+        <button class="tab" role="tab" data-tab="plan" id="t-plan">خطة الأسبوع</button>
+        <button class="tab" role="tab" data-tab="recipe" id="t-recipe">اسأل عن أكلة</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <div id="share-box" class="card" hidden>
+      <div>ابعت الكود ده لأي حد في البيت. يفتح التطبيق، يعمل حساب، ويدخل بيه على نفس المطبخ.</div>
+      <div class="row"><b class="code" id="share-code" style="font-size:24px"></b><button class="btn" id="b-copy" type="button">انسخ الكود</button></div>
+    </div>
+
+    <!-- PANTRY -->
+    <section class="view" id="v-pantry" hidden>
+      <div><h2>المخزون</h2><p class="muted small" style="margin:4px 0 0">سجّل اللي جبتوه للأسبوع. الخطة والوصفات بتشتغل منه.</p></div>
+      <form class="card" id="f-add">
+        <div class="row">
+          <label class="grow">الصنف<input id="p-name" required maxlength="80" placeholder="طماطم"></label>
+          <label style="width:90px">الكمية<input id="p-qty" type="number" min="0.25" step="0.25" value="1" inputmode="decimal"></label>
+          <label style="width:110px">الوحدة<select id="p-unit"></select></label>
+          <label class="grow">القسم<select id="p-cat"></select></label>
+          <button class="btn primary" type="submit">ضيف</button>
+        </div>
+      </form>
+      <details class="card" id="bulk">
+        <summary style="cursor:pointer;font-weight:500">جبت حاجات كتير؟ اكتب الليستة مرة واحدة</summary>
+        <textarea id="p-bulk" placeholder="2 كيلو طماطم، كيلو فراخ، كرتونة بيض، 3 علب تونة..."></textarea>
+        <div class="row"><button class="btn primary" id="b-parse" type="button">رتّبها لي</button><span class="muted small">الذكاء الاصطناعي هيقسّمها أصناف وكميات، وتراجعها قبل الحفظ.</span></div>
+        <div id="parse-out" hidden></div>
+      </details>
+      <div id="pantry-msg" class="note err" hidden></div>
+      <div id="pantry-list" style="display:grid;gap:16px"></div>
+    </section>
+
+    <!-- PLAN -->
+    <section class="view" id="v-plan" hidden>
+      <div><h2>خطة الأسبوع</h2><p class="muted small" style="margin:4px 0 0">فطار وغدا وعشا من السبت للجمعة، من اللي في المخزون. دوس على أي أكلة تشوف طريقتها.</p></div>
+      <form class="card" id="f-plan">
+        <div class="row">
+          <label style="width:110px">عدد الأفراد<input id="pl-people" type="number" min="1" max="20" value="4"></label>
+          <label class="grow">طلبات خاصة (اختياري)<input id="pl-prefs" maxlength="300" placeholder="مثلاً: سمك يوم الجمعة، من غير قلي كتير"></label>
+          <button class="btn primary" id="b-plan" type="submit">اعمل خطة الأسبوع</button>
+        </div>
+      </form>
+      <div id="plan-msg" class="note err" hidden></div>
+      <div id="plan-out"></div>
+    </section>
+
+    <!-- RECIPE -->
+    <section class="view" id="v-recipe" hidden>
+      <div><h2>اسأل عن أكلة</h2><p class="muted small" style="margin:4px 0 0">اكتب اسم أي أكلة مصرية، وهتطلعلك المقادير وطريقة العمل وفيديوهات يوتيوب ليها.</p></div>
+      <form class="card" id="f-recipe">
+        <div class="row">
+          <label class="grow">اسم الأكلة<input id="r-dish" required maxlength="80" placeholder="ملوخية، كشري، محشي كرنب..."></label>
+          <button class="btn primary" id="b-recipe" type="submit">هات الطريقة</button>
+        </div>
+        <div class="chips" id="r-chips"></div>
+      </form>
+      <div id="recipe-msg" class="note err" hidden></div>
+      <div id="recipe-out"></div>
+    </section>
+  </main>
+  <footer class="wrap">Fabio Kitchen</footer>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script>if(!window.supabase)document.write('<script src="https://unpkg.com/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"><\/script>');</script>
+<script>
+// Fabio Kitchen pure logic (shared by the page and the edge function)
+const DAYS = ['السبت', 'الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة'];
+const UNITS = ['عدد', 'كيلو', 'جرام', 'لتر', 'علبة', 'كيس', 'حزمة', 'كرتونة', 'زجاجة'];
+const CATEGORIES = ['خضار', 'فاكهة', 'لحوم وفراخ وسمك', 'ألبان وبيض', 'بقوليات ورز ومكرونة', 'بقالة وتوابل', 'تانية'];
+
+const str = (v, max = 400) => (typeof v === 'string' ? v : v == null ? '' : String(v)).trim().slice(0, max);
+
+function normAr(s) {
+  return str(s, 1000)
+    .replace(/[ً-ْـ]/g, '')
+    .replace(/[أإآ]/g, 'ا')
+    .replace(/ة/g, 'ه')
+    .replace(/ى/g, 'ي')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLowerCase();
+}
+
+function recipeKey(dish) {
+  return normAr(dish).slice(0, 120);
+}
+
+function youtubeUrl(dish) {
+  return 'https://www.youtube.com/results?search_query=' + encodeURIComponent('طريقة عمل ' + str(dish, 120));
+}
+
+const pair = (x) => {
+  if (typeof x === 'string') return { item: str(x, 120), amount: '' };
+  if (x && typeof x === 'object') return { item: str(x.item ?? x.name, 120), amount: str(x.amount ?? x.qty, 60) };
+  return { item: '', amount: '' };
+};
+const list = (v) => (Array.isArray(v) ? v : v ? [v] : []);
+
+function normalizeRecipe(obj, dish) {
+  if (!obj || typeof obj !== 'object') throw new Error('bad recipe');
+  const ingredients = list(obj.ingredients).map(pair).filter((p) => p.item);
+  const steps = list(obj.steps).map((s) => str(s, 600)).filter(Boolean);
+  if (!ingredients.length || !steps.length) throw new Error('incomplete recipe');
+  const n = parseInt(obj.servings, 10);
+  return {
+    name: str(obj.name, 80) || str(dish, 80),
+    summary: str(obj.summary, 300),
+    time: str(obj.time, 40),
+    servings: Number.isFinite(n) && n > 0 && n < 100 ? n : null,
+    ingredients: ingredients.slice(0, 40),
+    steps: steps.slice(0, 30),
+    tips: list(obj.tips).map((s) => str(s, 300)).filter(Boolean).slice(0, 8),
+  };
+}
+
+function normalizePlan(obj) {
+  const src = list(obj && obj.days);
+  const byDay = new Map();
+  src.forEach((d, i) => {
+    if (!d || typeof d !== 'object') return;
+    const k = DAYS.findIndex((name) => normAr(name) === normAr(d.day));
+    const idx = k >= 0 ? k : i;
+    if (idx < 7 && !byDay.has(idx)) byDay.set(idx, d);
+  });
+  if (!byDay.size) throw new Error('empty plan');
+  const days = DAYS.map((day, i) => {
+    const d = byDay.get(i) || {};
+    return { day, breakfast: str(d.breakfast, 80), lunch: str(d.lunch, 80), dinner: str(d.dinner, 80) };
+  });
+  return {
+    days,
+    shopping: list(obj.shopping).map(pair).filter((p) => p.item).slice(0, 40),
+    note: str(obj.note, 300),
+  };
+}
+
+function normalizeItems(arr) {
+  return list(arr)
+    .map((x) => (typeof x === 'string' ? { name: x } : x))
+    .filter((x) => x && typeof x === 'object' && str(x.name))
+    .map((x) => {
+      const q = parseFloat(x.qty);
+      return {
+        name: str(x.name, 80),
+        qty: Number.isFinite(q) && q > 0 && q < 100000 ? q : 1,
+        unit: UNITS.includes(str(x.unit)) ? str(x.unit) : 'عدد',
+        category: CATEGORIES.includes(str(x.category)) ? str(x.category) : 'تانية',
+      };
+    })
+    .slice(0, 60);
+}
+
+function inPantry(ingredient, pantryNames) {
+  const ing = normAr(ingredient);
+  if (!ing) return false;
+  return pantryNames.some((p) => {
+    const n = normAr(p);
+    return n && (ing.includes(n) || n.includes(ing));
+  });
+}
+
+
+const SUPABASE_URL = 'https://xlzgormomkhwygsnpbeu.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_2p5hFpf9ZDSxGZS0vofhBQ_eu1wUM2e';
+const POPULAR = ['ملوخية', 'كشري', 'محشي كرنب', 'فتة', 'مسقعة', 'حواوشي', 'بامية باللحمة', 'فول مدمس', 'طعمية', 'مكرونة بشاميل', 'أم علي', 'كفتة داوود باشا'];
+const ERRORS = {
+  no_key: 'الذكاء الاصطناعي لسه مش متوصل: مفتاح Gemini مش متحط في Supabase.',
+  bad_key: 'مفتاح Gemini غلط أو اتلغى. حط مفتاح جديد في Supabase.',
+  rate_limited: 'طلبات كتير ورا بعض. استنى دقيقة وجرب تاني.',
+  not_food: 'مش لاقي أكلة بالاسم ده. جرب تكتبه بشكل تاني.',
+  ai_failed: 'الرد ماوصلش كامل. جرب تاني.',
+  forbidden: 'مش عندك صلاحية على المطبخ ده.',
+  unauthorized: 'انتهت الجلسة. سجّل دخول تاني.',
+  network: 'مفيش اتصال بالسيرفر. اتأكد من النت وجرب تاني.',
+};
+
+/* ---------- data layer (Supabase; tests can inject window.__FK_API) ---------- */
+function makeApi() {
+  const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  const check = ({ data, error }) => { if (error) throw error; return data; };
+  return {
+    onAuth: (cb) => sb.auth.onAuthStateChange((_e, s) => cb(s)),
+    session: async () => (await sb.auth.getSession()).data.session,
+    signIn: (email, password) => sb.auth.signInWithPassword({ email, password }).then(check),
+    signUp: (email, password) => sb.auth.signUp({ email, password, options: { emailRedirectTo: location.origin + location.pathname } }).then(check),
+    signOut: () => sb.auth.signOut(),
+    myKitchen: async () => (check(await sb.from('fk_kitchens').select('*').order('created_at').limit(1)))[0] || null,
+    createKitchen: async (name) => check(await sb.rpc('fk_create_kitchen', { p_name: name })),
+    joinKitchen: async (code) => check(await sb.rpc('fk_join_kitchen', { p_code: code })),
+    pantry: async (kid) => check(await sb.from('fk_pantry').select('id,name,qty,unit,category').eq('kitchen_id', kid).order('created_at')),
+    addItems: async (kid, items) => check(await sb.from('fk_pantry').insert(items.map((i) => ({ ...i, kitchen_id: kid })))),
+    setQty: async (id, qty) => check(await sb.from('fk_pantry').update({ qty }).eq('id', id)),
+    remove: async (id) => check(await sb.from('fk_pantry').delete().eq('id', id)),
+    plan: async (kid) => check(await sb.from('fk_plans').select('plan,people,prefs,updated_at').eq('kitchen_id', kid).maybeSingle()),
+    ai: async (body) => {
+      const { data, error } = await sb.functions.invoke('fk-ai', { body });
+      if (!error) return data;
+      let code = 'ai_failed';
+      try { const j = await error.context.json(); code = j.error || code; } catch { if (error.name === 'FunctionsFetchError') code = 'network'; }
+      throw Object.assign(new Error(code), { code });
+    },
+  };
+}
+const api = window.__FK_API || makeApi();
+
+/* ---------- helpers ---------- */
+const $ = (id) => document.getElementById(id);
+const el = (tag, attrs = {}, ...kids) => {
+  const n = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === 'class') n.className = v; else if (k.startsWith('on')) n.addEventListener(k.slice(2), v); else if (v != null && v !== false) n.setAttribute(k, v);
+  }
+  for (const c of kids.flat()) if (c != null && c !== false) n.append(c.nodeType ? c : String(c));
+  return n;
+};
+const fmtQty = (q) => (Math.round(q * 100) / 100).toLocaleString('ar-EG');
+function msg(id, text, kind = 'err') { const m = $(id); m.className = 'note ' + kind; m.textContent = text || ''; m.hidden = !text; }
+const errText = (e) => ERRORS[e && e.code] || ERRORS[e && e.message] || (e && /Invalid login/i.test(e.message) ? 'الإيميل أو كلمة السر غلط.' : e && /already registered/i.test(e.message) ? 'الإيميل ده عليه حساب بالفعل. سجّل دخول.' : e && /invalid code/i.test(e.message) ? 'الكود ده مش صحيح.' : e && /not confirmed/i.test(e.message) ? 'لازم تأكد الإيميل الأول من الرسالة اللي وصلتك.' : 'حصلت مشكلة. جرب تاني.');
+async function busy(btn, fn) {
+  const old = btn.innerHTML; btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> ' + old;
+  try { return await fn(); } finally { btn.disabled = false; btn.innerHTML = old; }
+}
+
+/* ---------- state ---------- */
+const state = { kitchen: null, items: [], plan: null, signup: false };
+
+function show(view) { for (const v of ['loading', 'auth', 'setup', 'app']) $('v-' + v).hidden = v !== view; }
+function tab(name) {
+  if (!['pantry', 'plan', 'recipe'].includes(name)) name = 'pantry';
+  for (const t of ['pantry', 'plan', 'recipe']) { $('v-' + t).hidden = t !== name; $('t-' + t).setAttribute('aria-selected', String(t === name)); }
+  if (location.hash.slice(1) !== name) history.replaceState(null, '', '#' + name);
+}
+
+/* ---------- boot ---------- */
+const withTimeout = (p, ms) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(Object.assign(new Error('network'), { code: 'network' })), ms))]);
+async function route(session) {
+  if (!session) { show('auth'); return; }
+  show('loading');
+  try {
+    state.kitchen = await withTimeout(api.myKitchen(), 15000);
+  } catch (e) { show('auth'); msg('auth-msg', errText(e)); return; }
+  if (!state.kitchen) { show('setup'); return; }
+  enterApp();
+}
+async function enterApp() {
+  show('app');
+  $('k-label').textContent = state.kitchen.name;
+  $('share-code').textContent = state.kitchen.join_code;
+  tab(location.hash.slice(1));
+  const [items, plan] = await Promise.all([api.pantry(state.kitchen.id).catch(() => null), api.plan(state.kitchen.id).catch(() => null)]);
+  if (items) { state.items = items; renderPantry(); } else msg('pantry-msg', ERRORS.network);
+  state.plan = plan; renderPlan();
+}
+
+/* ---------- auth ---------- */
+$('a-toggle').onclick = () => {
+  state.signup = !state.signup;
+  $('auth-title').textContent = state.signup ? 'حساب جديد' : 'تسجيل الدخول';
+  $('a-submit').textContent = state.signup ? 'اعمل الحساب' : 'دخول';
+  $('a-toggle').textContent = state.signup ? 'عندك حساب؟ سجّل دخول' : 'معندكش حساب؟ اعمل حساب جديد';
+  $('a-pass').autocomplete = state.signup ? 'new-password' : 'current-password';
+  msg('auth-msg', '');
+};
+$('f-auth').addEventListener('submit', (ev) => {
+  ev.preventDefault();
+  const email = $('a-email').value.trim(), pass = $('a-pass').value;
+  busy($('a-submit'), async () => {
+    try {
+      if (state.signup) {
+        const r = await api.signUp(email, pass);
+        if (!r.session) msg('auth-msg', 'تمام! بعتنالك رسالة على ' + email + '. افتحها ودوس على لينك التأكيد، وبعدين سجّل دخول.', 'ok');
+        else route(r.session);
+      } else {
+        const r = await api.signIn(email, pass);
+        route(r.session);
+      }
+    } catch (e) { msg('auth-msg', errText(e)); }
+  });
+});
+document.addEventListener('click', (ev) => {
+  if (ev.target.closest('[data-act="logout"]')) { api.signOut().finally(() => { state.kitchen = null; show('auth'); }); }
+});
+
+/* ---------- setup ---------- */
+$('f-create').addEventListener('submit', (ev) => {
+  ev.preventDefault();
+  busy(ev.submitter || ev.target.querySelector('button'), async () => {
+    try { state.kitchen = await api.createKitchen($('k-name').value.trim() || 'مطبخي'); enterApp(); $('share-box').hidden = false; }
+    catch (e) { msg('setup-msg', errText(e)); }
+  });
+});
+$('f-join').addEventListener('submit', (ev) => {
+  ev.preventDefault();
+  busy(ev.submitter || ev.target.querySelector('button'), async () => {
+    try { state.kitchen = await api.joinKitchen($('k-code').value.trim()); enterApp(); }
+    catch (e) { msg('setup-msg', errText(e)); }
+  });
+});
+$('b-share').onclick = () => { $('share-box').hidden = !$('share-box').hidden; };
+$('b-copy').onclick = () => {
+  const code = state.kitchen.join_code;
+  const done = () => { $('b-copy').textContent = 'اتنسخ'; setTimeout(() => { $('b-copy').textContent = 'انسخ الكود'; $('share-box').hidden = true; }, 1500); };
+  navigator.clipboard.writeText(code).then(done, () => { const r = document.createRange(); r.selectNodeContents($('share-code')); getSelection().removeAllRanges(); getSelection().addRange(r); });
+};
+
+/* ---------- tabs ---------- */
+document.querySelectorAll('.tab').forEach((b) => (b.onclick = () => tab(b.dataset.tab)));
+addEventListener('hashchange', () => { if (!$('v-app').hidden) tab(location.hash.slice(1)); });
+
+/* ---------- pantry ---------- */
+for (const u of UNITS) $('p-unit').append(el('option', { value: u }, u));
+for (const c of CATEGORIES) $('p-cat').append(el('option', { value: c }, c));
+$('p-cat').value = 'خضار';
+
+async function refreshPantry() { state.items = await api.pantry(state.kitchen.id); renderPantry(); }
+
+function renderPantry() {
+  const box = $('pantry-list'); box.replaceChildren();
+  if (!state.items.length) {
+    box.append(el('div', { class: 'empty' }, 'المخزون فاضي. ضيف أول صنف من الفورم اللي فوق، أو اكتب ليستة المشتريات كلها مرة واحدة.'));
+    return;
+  }
+  const groups = new Map(CATEGORIES.map((c) => [c, []]));
+  for (const it of state.items) (groups.get(it.category) || groups.get('تانية')).push(it);
+  for (const [cat, list] of groups) {
+    if (!list.length) continue;
+    box.append(el('div', { class: 'cat' },
+      el('h3', {}, cat, el('small', {}, list.length + ' صنف')),
+      el('ul', { class: 'items' }, list.map(itemRow))));
+  }
+}
+function itemRow(it) {
+  const step = it.unit === 'جرام' ? 50 : it.unit === 'كيلو' || it.unit === 'لتر' ? 0.25 : 1;
+  const li = el('li', { 'data-id': it.id },
+    el('span', { class: 'nm' }, it.name),
+    el('span', { class: 'qty' },
+      el('button', { class: 'btn icon', type: 'button', 'aria-label': 'قلل ' + it.name, onclick: () => bump(it, -step) }, '−'),
+      el('b', {}, fmtQty(it.qty) + ' ' + it.unit),
+      el('button', { class: 'btn icon', type: 'button', 'aria-label': 'زوّد ' + it.name, onclick: () => bump(it, step) }, '+')),
+    el('button', { class: 'btn icon ghost', type: 'button', 'aria-label': 'امسح ' + it.name, onclick: (e) => askDelete(it, e.currentTarget) }, '✕'));
+  return li;
+}
+async function bump(it, d) {
+  const q = Math.max(0, Math.round((it.qty + d) * 100) / 100);
+  if (q === 0) return askDelete(it, document.querySelector(`li[data-id="${it.id}"] .ghost`));
+  const old = it.qty; it.qty = q; renderPantry();
+  try { await api.setQty(it.id, q); msg('pantry-msg', ''); } catch (e) { it.qty = old; renderPantry(); msg('pantry-msg', errText(e)); }
+}
+function askDelete(it, btn) {
+  const li = btn.closest('li');
+  li.replaceChildren(
+    el('span', { class: 'nm' }, 'تمسح ' + it.name + '؟'),
+    el('button', { class: 'btn danger', type: 'button', onclick: async () => {
+      try { await api.remove(it.id); state.items = state.items.filter((x) => x.id !== it.id); renderPantry(); }
+      catch (e) { msg('pantry-msg', errText(e)); renderPantry(); }
+    } }, 'امسح'),
+    el('button', { class: 'btn ghost', type: 'button', onclick: renderPantry }, 'لا'));
+}
+$('f-add').addEventListener('submit', (ev) => {
+  ev.preventDefault();
+  const [item] = normalizeItems([{ name: $('p-name').value, qty: $('p-qty').value, unit: $('p-unit').value, category: $('p-cat').value }]);
+  if (!item) return;
+  busy(ev.target.querySelector('button[type=submit]'), async () => {
+    try { await api.addItems(state.kitchen.id, [item]); $('p-name').value = ''; $('p-qty').value = 1; $('p-name').focus(); await refreshPantry(); msg('pantry-msg', ''); }
+    catch (e) { msg('pantry-msg', errText(e)); }
+  });
+});
+$('b-parse').onclick = () => {
+  const text = $('p-bulk').value.trim();
+  if (!text) return;
+  busy($('b-parse'), async () => {
+    try {
+      const { items } = await api.ai({ action: 'parse', text });
+      const parsed = normalizeItems(items);
+      const out = $('parse-out'); out.hidden = false;
+      if (!parsed.length) { out.replaceChildren(el('div', { class: 'note err' }, 'مالقيتش أصناف في الكلام ده.')); return; }
+      out.replaceChildren(
+        el('ul', { class: 'items preview' }, parsed.map((p) => el('li', {}, el('span', { class: 'nm' }, p.name), el('span', { class: 'muted small' }, fmtQty(p.qty) + ' ' + p.unit + ' · ' + p.category)))),
+        el('div', { class: 'row', style: 'margin-top:10px' },
+          el('button', { class: 'btn primary', type: 'button', id: 'b-addall', onclick: (e) => busy(e.currentTarget, async () => {
+            try { await api.addItems(state.kitchen.id, parsed); $('p-bulk').value = ''; out.hidden = true; await refreshPantry(); }
+            catch (er) { msg('pantry-msg', errText(er)); }
+          }) }, 'ضيف ' + parsed.length + ' صنف للمخزون'),
+          el('button', { class: 'btn ghost', type: 'button', onclick: () => (out.hidden = true) }, 'إلغاء')));
+    } catch (e) { msg('pantry-msg', errText(e)); }
+  });
+};
+
+/* ---------- plan ---------- */
+function renderPlan() {
+  const out = $('plan-out'); out.replaceChildren();
+  const p = state.plan && state.plan.plan;
+  if (!p) {
+    out.append(el('div', { class: 'empty' }, state.items.length ? 'مفيش خطة لسه. دوس "اعمل خطة الأسبوع" وهتتعمل من الـ ' + state.items.length + ' صنف اللي في المخزون.' : 'ضيف اللي جبتوه في المخزون الأول، وبعدين اعمل الخطة.'));
+    return;
+  }
+  if (state.plan.people) $('pl-people').value = state.plan.people;
+  const meal = (label, dish) => el('div', { class: 'meal' }, el('span', {}, label), dish ? el('button', { class: 'dish', type: 'button', onclick: () => askRecipe(dish) }, dish) : el('i', { class: 'muted' }, '—'));
+  out.append(el('div', { class: 'days' }, p.days.map((d) => el('article', { class: 'day' }, el('h3', {}, d.day), meal('فطار', d.breakfast), meal('غدا', d.lunch), meal('عشا', d.dinner)))));
+  if (p.shopping.length) out.append(el('div', { class: 'card', style: 'margin-top:16px' }, el('h3', {}, 'محتاجين تشتروا'), el('ul', { class: 'shop' }, p.shopping.map((s) => el('li', {}, s.item + (s.amount ? ' (' + s.amount + ')' : ''))))));
+  const when = state.plan.updated_at ? new Date(state.plan.updated_at).toLocaleDateString('ar-EG', { weekday: 'long', day: 'numeric', month: 'long' }) : '';
+  out.append(el('p', { class: 'muted small' }, [p.note, when && 'اتعملت يوم ' + when].filter(Boolean).join(' · ')));
+}
+$('f-plan').addEventListener('submit', (ev) => {
+  ev.preventDefault();
+  busy($('b-plan'), async () => {
+    try {
+      const people = +$('pl-people').value || 4, prefs = $('pl-prefs').value.trim();
+      const { plan } = await api.ai({ action: 'plan', kitchen_id: state.kitchen.id, people, prefs });
+      state.plan = { plan: normalizePlan(plan), people, prefs, updated_at: new Date().toISOString() };
+      msg('plan-msg', ''); renderPlan();
+    } catch (e) { msg('plan-msg', errText(e)); }
+  });
+});
+
+/* ---------- recipe ---------- */
+for (const d of POPULAR) $('r-chips').append(el('button', { class: 'chip', type: 'button', onclick: () => askRecipe(d) }, d));
+function askRecipe(dish) { tab('recipe'); $('r-dish').value = dish; $('f-recipe').requestSubmit(); scrollTo({ top: 0, behavior: 'smooth' }); }
+$('f-recipe').addEventListener('submit', (ev) => {
+  ev.preventDefault();
+  const dish = $('r-dish').value.trim();
+  if (!dish) return;
+  $('recipe-out').replaceChildren(el('div', { class: 'empty' }, el('span', { class: 'spinner' }), ' بنجهّز طريقة ' + dish + '...'));
+  busy($('b-recipe'), async () => {
+    try {
+      const { recipe } = await api.ai({ action: 'recipe', dish });
+      renderRecipe(normalizeRecipe(recipe, dish)); msg('recipe-msg', '');
+    } catch (e) { $('recipe-out').replaceChildren(); msg('recipe-msg', errText(e)); }
+  });
+});
+function renderRecipe(r) {
+  const names = state.items.map((i) => i.name);
+  const have = r.ingredients.filter((i) => inPantry(i.item, names)).length;
+  $('recipe-out').replaceChildren(el('article', { class: 'card recipe' },
+    el('div', {}, el('h2', {}, r.name), r.summary ? el('p', { class: 'muted', style: 'margin:6px 0 0' }, r.summary) : null),
+    el('div', { class: 'meta' },
+      r.time ? el('span', { class: 'pill' }, 'الوقت: ' + r.time) : null,
+      r.servings ? el('span', { class: 'pill' }, 'تكفي ' + r.servings + ' أفراد') : null,
+      el('span', { class: 'pill' + (have < r.ingredients.length ? ' miss' : '') }, 'عندك ' + have + ' من ' + r.ingredients.length + ' مكونات'),
+      el('a', { class: 'btn yt', href: youtubeUrl(r.name), target: '_blank', rel: 'noopener' }, '▶ فيديوهات على يوتيوب')),
+    el('div', { class: 'two' },
+      el('div', {}, el('h3', { style: 'margin-bottom:6px' }, 'المقادير'),
+        el('ul', { class: 'ings' }, r.ingredients.map((i) => el('li', {}, el('span', {}, i.item, ' ', inPantry(i.item, names) ? el('span', { class: 'pill' }, 'عندك') : null), el('span', { class: 'muted' }, i.amount))))),
+      el('div', {}, el('h3', { style: 'margin-bottom:8px' }, 'طريقة العمل'),
+        el('ol', { class: 'steps' }, r.steps.map((s) => el('li', {}, el('span', {}, s)))))),
+    r.tips.length ? el('div', { class: 'note ok' }, el('b', {}, 'نصايح: '), r.tips.join(' · ')) : null));
+}
+
+/* ---------- start ---------- */
+try {
+  api.onAuth((s) => { if (!s) show('auth'); });
+  withTimeout(api.session(), 10000).then(route, () => show('auth'));
+} catch (e) {
+  $('loading-msg').textContent = 'التطبيق ماعرفش يفتح. حدّث الصفحة، ولو فضل كده جرّب من Chrome.';
+  $('b-reload').hidden = false;
+}
+</script>
+</body>
+</html>
