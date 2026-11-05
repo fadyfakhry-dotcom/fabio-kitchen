@@ -40,7 +40,7 @@ header{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:1px so
 .brand span{max-width:100%}
 .brand span{color:var(--muted);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tabs{display:flex;gap:4px;padding-block:0 10px;overflow-x:auto}
-.tab{flex:1;min-width:max-content;border:0;background:transparent;padding:9px 14px;border-radius:999px;cursor:pointer;color:var(--muted);font-weight:500}
+.tab{flex:1;min-width:max-content;border:0;background:transparent;padding:8px 10px;font-size:14px;border-radius:999px;cursor:pointer;color:var(--muted);font-weight:500}
 .tab[aria-selected="true"]{background:var(--accent);color:var(--accent-ink)}
 .tab:focus-visible,.btn:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,.chip:focus-visible,.dish:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 
@@ -102,6 +102,18 @@ textarea{min-height:96px;resize:vertical}
 .dish{border:0;background:none;text-align:start;padding:2px 0;cursor:pointer;color:var(--ink);text-decoration:underline;text-decoration-color:var(--line);text-underline-offset:4px}
 .dish:hover{color:var(--accent);text-decoration-color:var(--accent)}
 .shop{columns:2 200px;margin:0;padding-inline-start:18px}
+.check{display:flex;flex-direction:row;align-items:center;gap:8px;font-size:14px;color:var(--ink);cursor:pointer}
+.check input{width:18px;height:18px;accent-color:var(--accent)}
+.pill.fast{background:var(--spice-soft);color:var(--spice)}
+.day.fasting{border-color:var(--spice)}
+.day h3 small{font-family:var(--font-body);font-size:12px;color:var(--muted);margin-inline-start:6px}
+.day .fastline{display:block;padding:6px 14px;font-size:12px;background:var(--spice-soft);color:var(--spice)}
+.kid{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.kid .who{flex:1;min-width:0}
+.kid .who b{font-size:17px}
+.kmeals{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
+.kmeal{display:grid;gap:8px;align-content:start}
+.kmeal ol{margin:0;padding-inline-start:20px;display:grid;gap:4px}
 
 /* recipe */
 .recipe{display:grid;gap:16px}
@@ -196,6 +208,7 @@ footer{padding-block:0 32px;text-align:center;font-size:12px;color:var(--muted)}
         <button class="tab" role="tab" data-tab="pantry" id="t-pantry">المخزون</button>
         <button class="tab" role="tab" data-tab="plan" id="t-plan">خطة الأسبوع</button>
         <button class="tab" role="tab" data-tab="recipe" id="t-recipe">اسأل عن أكلة</button>
+        <button class="tab" role="tab" data-tab="kids" id="t-kids">أكل الأطفال</button>
       </div>
     </div>
   </header>
@@ -237,7 +250,9 @@ footer{padding-block:0 32px;text-align:center;font-size:12px;color:var(--muted)}
           <label class="grow">طلبات خاصة (اختياري)<input id="pl-prefs" maxlength="300" placeholder="مثلاً: سمك يوم الجمعة، من غير قلي كتير"></label>
           <button class="btn primary" id="b-plan" type="submit">اعمل خطة الأسبوع</button>
         </div>
+        <label class="check"><input type="checkbox" id="pl-fast" checked> اتبع الصيام القبطي (الأيام الصيامي في الخطة تبقى أكل صيامي)</label>
       </form>
+      <div id="fast-week" hidden></div>
       <div id="plan-msg" class="note err" hidden></div>
       <div id="plan-out"></div>
     </section>
@@ -250,10 +265,28 @@ footer{padding-block:0 32px;text-align:center;font-size:12px;color:var(--muted)}
           <label class="grow">اسم الأكلة<input id="r-dish" required maxlength="80" placeholder="ملوخية، كشري، محشي كرنب..."></label>
           <button class="btn primary" id="b-recipe" type="submit">هات الطريقة</button>
         </div>
+        <label class="check"><input type="checkbox" id="r-fast"> نسخة صيامي</label>
         <div class="chips" id="r-chips"></div>
       </form>
       <div id="recipe-msg" class="note err" hidden></div>
       <div id="recipe-out"></div>
+    </section>
+
+    <!-- KIDS -->
+    <section class="view" id="v-kids" hidden>
+      <div><h2>أكل الأطفال</h2><p class="muted small" style="margin:4px 0 0">سجّل كل طفل بتاريخ ميلاده، وهتطلعله وجبات مناسبة لسنه بالظبط ومن اللي في المخزون.</p></div>
+      <div id="kids-list" style="display:grid;gap:12px"></div>
+      <form class="card" id="f-kid">
+        <h3>ضيف طفل</h3>
+        <div class="row">
+          <label class="grow">الاسم<input id="k-kname" required maxlength="40" placeholder="مثلاً: مريم"></label>
+          <label style="width:170px">تاريخ الميلاد<input id="k-birth" type="date" required></label>
+        </div>
+        <label>ملاحظات (اختياري)<input id="k-notes" maxlength="300" placeholder="حساسية من البيض، مش بيحب الخضار المسلوقة..."></label>
+        <button class="btn primary" type="submit">ضيف الطفل</button>
+      </form>
+      <div id="kids-msg" class="note err" hidden></div>
+      <div id="kids-out"></div>
     </section>
   </main>
   <footer class="wrap">Fabio Kitchen</footer>
@@ -312,7 +345,7 @@ function normalizeRecipe(obj, dish) {
   };
 }
 
-function normalizePlan(obj) {
+function normalizePlan(obj, dates) {
   const src = list(obj && obj.days);
   const byDay = new Map();
   src.forEach((d, i) => {
@@ -324,7 +357,11 @@ function normalizePlan(obj) {
   if (!byDay.size) throw new Error('empty plan');
   const days = DAYS.map((day, i) => {
     const d = byDay.get(i) || {};
-    return { day, breakfast: str(d.breakfast, 80), lunch: str(d.lunch, 80), dinner: str(d.dinner, 80) };
+    const info = (Array.isArray(dates) && dates[i]) || d;
+    return {
+      day, breakfast: str(d.breakfast, 80), lunch: str(d.lunch, 80), dinner: str(d.dinner, 80),
+      date: str(info.date, 10), fast: str(info.fast, 40), fish: !!info.fish,
+    };
   });
   return {
     days,
@@ -356,6 +393,78 @@ function inPantry(ingredient, pantryNames) {
     const n = normAr(p);
     return n && (ing.includes(n) || n.includes(ing));
   });
+}
+
+// ---------- dates (UTC-based, ISO yyyy-mm-dd) ----------
+const toDate = (iso) => new Date(iso + 'T00:00:00Z');
+const iso = (d) => d.toISOString().slice(0, 10);
+const addDays = (isoDay, n) => { const d = toDate(isoDay); d.setUTCDate(d.getUTCDate() + n); return iso(d); };
+
+// Saturday..Friday week (Egyptian week) that contains `day`.
+function weekDates(day) {
+  const dow = toDate(day).getUTCDay(); // 0=Sun .. 6=Sat
+  const start = addDays(day, -((dow + 1) % 7));
+  return Array.from({ length: 7 }, (_, i) => addDays(start, i));
+}
+
+// Coptic Orthodox fasting days between `from` and `to`, derived from the
+// Coptic Easter date(s) (taken from the Egypt holidays calendar).
+function copticFastDays({ easter, easters, from, to }) {
+  const es = (easters || [easter]).filter(Boolean);
+  const out = [];
+  for (let day = from; day <= to; day = addDays(day, 1)) {
+    const md = day.slice(5);
+    const dow = toDate(day).getUTCDay();
+    let fast = null, fish = true, festive = false;
+    for (const e of es) {
+      const lent = addDays(e, -55), jonah = addDays(lent, -14), pentecost = addDays(e, 49);
+      const julyEnd = e.slice(0, 4) + '-07-11';
+      if (day >= jonah && day <= addDays(jonah, 2)) { fast = 'صوم يونان'; fish = false; }
+      else if (day >= lent && day < e) { fast = 'الصوم الكبير'; fish = false; }
+      else if (day >= e && day <= pentecost) festive = true;
+      else if (day > pentecost && day <= julyEnd) fast = 'صوم الرسل';
+    }
+    if (!fast && (md >= '11-25' || md <= '01-06')) fast = 'صوم الميلاد';
+    if (!fast && md >= '08-07' && md <= '08-21') fast = 'صوم العدرا';
+    if (md >= '01-07' && md <= '01-19') festive = true;
+    if (!fast && !festive && (dow === 3 || dow === 5)) fast = 'صوم الأربعاء والجمعة';
+    if (fast) out.push({ day, fast, fish });
+  }
+  return out;
+}
+
+// ---------- kids ----------
+function ageInMonths(birth, today) {
+  const b = toDate(birth), t = toDate(today);
+  let m = (t.getUTCFullYear() - b.getUTCFullYear()) * 12 + (t.getUTCMonth() - b.getUTCMonth());
+  if (t.getUTCDate() < b.getUTCDate()) m -= 1;
+  return Math.max(0, m);
+}
+
+const monthsText = (m) => (m === 1 ? 'شهر' : m === 2 ? 'شهرين' : m <= 10 ? m + ' شهور' : m + ' شهر');
+const yearsText = (y) => (y === 1 ? 'سنة' : y === 2 ? 'سنتين' : y <= 10 ? y + ' سنين' : y + ' سنة');
+function ageText(months) {
+  if (months < 1) return 'أقل من شهر';
+  if (months < 12) return monthsText(months);
+  const y = Math.floor(months / 12), r = months % 12;
+  return yearsText(y) + (r ? ' و' + monthsText(r) : '');
+}
+
+function normalizeKidMeals(obj) {
+  const meals = list(obj && obj.meals)
+    .filter((m) => m && typeof m === 'object')
+    .map((m) => ({
+      name: str(m.name, 80), meal: str(m.meal, 20), portion: str(m.portion, 80), note: str(m.note, 300),
+      ingredients: list(m.ingredients).map(pair).filter((p) => p.item).slice(0, 20),
+      steps: list(m.steps).map((s) => str(s, 400)).filter(Boolean).slice(0, 12),
+    }))
+    .filter((m) => m.name && m.ingredients.length && m.steps.length)
+    .slice(0, 8);
+  return {
+    meals,
+    avoid: list(obj && obj.avoid).map((s) => str(s, 200)).filter(Boolean).slice(0, 8),
+    tips: list(obj && obj.tips).map((s) => str(s, 300)).filter(Boolean).slice(0, 6),
+  };
 }
 
 
@@ -398,6 +507,10 @@ function makeApi() {
     setQty: async (id, qty) => check(await sb.from('fk_pantry').update({ qty }).eq('id', id)),
     remove: async (id) => check(await sb.from('fk_pantry').delete().eq('id', id)),
     plan: async (kid) => check(await sb.from('fk_plans').select('plan,people,prefs,updated_at').eq('kitchen_id', kid).maybeSingle()),
+    fastingDays: async (days) => check(await sb.from('fk_fasting_days').select('day,fast,fish').in('day', days)),
+    kids: async (kid) => check(await sb.from('fk_kids').select('id,name,birth_date,notes').eq('kitchen_id', kid).order('birth_date')),
+    addKid: async (kid, k) => check(await sb.from('fk_kids').insert({ ...k, kitchen_id: kid })),
+    removeKid: async (id) => check(await sb.from('fk_kids').delete().eq('id', id)),
     ai: async (body) => {
       const { data, error } = await sb.functions.invoke('fk-ai', { body });
       if (!error) return data;
@@ -428,12 +541,16 @@ async function busy(btn, fn) {
 }
 
 /* ---------- state ---------- */
-const state = { kitchen: null, items: [], plan: null, signup: false };
+const state = { kitchen: null, items: [], plan: null, signup: false, fasts: new Map(), kids: [] };
+const TABS = ['pantry', 'plan', 'recipe', 'kids'];
+const todayISO = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Cairo' }).format(new Date());
+const fmtDay = (iso) => new Date(iso + 'T12:00:00Z').toLocaleDateString('ar-EG', { day: 'numeric', month: 'long', timeZone: 'UTC' });
+const fastLabel = (f) => f.fast + (f.fish ? ' · السمك مسموح' : ' · من غير سمك');
 
 function show(view) { for (const v of ['loading', 'auth', 'setup', 'app']) $('v-' + v).hidden = v !== view; }
 function tab(name) {
-  if (!['pantry', 'plan', 'recipe'].includes(name)) name = 'pantry';
-  for (const t of ['pantry', 'plan', 'recipe']) { $('v-' + t).hidden = t !== name; $('t-' + t).setAttribute('aria-selected', String(t === name)); }
+  if (!TABS.includes(name)) name = 'pantry';
+  for (const t of TABS) { $('v-' + t).hidden = t !== name; $('t-' + t).setAttribute('aria-selected', String(t === name)); }
   if (location.hash.slice(1) !== name) history.replaceState(null, '', '#' + name);
 }
 
@@ -454,7 +571,18 @@ async function enterApp() {
   $('share-code').textContent = state.kitchen.join_code;
   $('share-name').textContent = state.kitchen.name;
   tab(location.hash.slice(1));
-  const [items, plan] = await Promise.all([api.pantry(state.kitchen.id).catch(() => null), api.plan(state.kitchen.id).catch(() => null)]);
+  const week = weekDates(todayISO());
+  const [items, plan, fasts, kids] = await Promise.all([
+    api.pantry(state.kitchen.id).catch(() => null),
+    api.plan(state.kitchen.id).catch(() => null),
+    api.fastingDays(week).catch(() => []),
+    api.kids(state.kitchen.id).catch(() => []),
+  ]);
+  state.fasts = new Map((fasts || []).map((f) => [String(f.day), f]));
+  state.kids = kids || [];
+  const todayFast = state.fasts.get(todayISO());
+  $('r-fast').checked = !!todayFast;
+  renderFastWeek(week); renderKids();
   if (items) { state.items = items; renderPantry(); } else msg('pantry-msg', ERRORS.network);
   state.plan = plan; renderPlan();
 }
@@ -615,8 +743,11 @@ function renderPlan() {
     return;
   }
   if (state.plan.people) $('pl-people').value = state.plan.people;
-  const meal = (label, dish) => el('div', { class: 'meal' }, el('span', {}, label), dish ? el('button', { class: 'dish', type: 'button', onclick: () => askRecipe(dish) }, dish) : el('i', { class: 'muted' }, '—'));
-  out.append(el('div', { class: 'days' }, p.days.map((d) => el('article', { class: 'day' }, el('h3', {}, d.day), meal('فطار', d.breakfast), meal('غدا', d.lunch), meal('عشا', d.dinner)))));
+  const meal = (label, dish, fast) => el('div', { class: 'meal' }, el('span', {}, label), dish ? el('button', { class: 'dish', type: 'button', onclick: () => askRecipe(dish, fast) }, dish) : el('i', { class: 'muted' }, '—'));
+  out.append(el('div', { class: 'days' }, p.days.map((d) => el('article', { class: 'day' + (d.fast ? ' fasting' : '') },
+    el('h3', {}, d.day, d.date ? el('small', {}, fmtDay(d.date)) : null),
+    d.fast ? el('span', { class: 'fastline' }, 'صيامي: ' + fastLabel(d)) : null,
+    meal('فطار', d.breakfast, !!d.fast), meal('غدا', d.lunch, !!d.fast), meal('عشا', d.dinner, !!d.fast)))));
   if (p.shopping.length) out.append(el('div', { class: 'card', style: 'margin-top:16px' }, el('h3', {}, 'محتاجين تشتروا'), el('ul', { class: 'shop' }, p.shopping.map((s) => el('li', {}, s.item + (s.amount ? ' (' + s.amount + ')' : ''))))));
   const when = state.plan.updated_at ? new Date(state.plan.updated_at).toLocaleDateString('ar-EG', { weekday: 'long', day: 'numeric', month: 'long' }) : '';
   out.append(el('p', { class: 'muted small' }, [p.note, when && 'اتعملت يوم ' + when].filter(Boolean).join(' · ')));
@@ -626,8 +757,8 @@ $('f-plan').addEventListener('submit', (ev) => {
   busy($('b-plan'), async () => {
     try {
       const people = +$('pl-people').value || 4, prefs = $('pl-prefs').value.trim();
-      const { plan } = await api.ai({ action: 'plan', kitchen_id: state.kitchen.id, people, prefs });
-      state.plan = { plan: normalizePlan(plan), people, prefs, updated_at: new Date().toISOString() };
+      const { plan } = await api.ai({ action: 'plan', kitchen_id: state.kitchen.id, people, prefs, fasting: $('pl-fast').checked });
+      state.plan = { plan: normalizePlan(plan, plan && plan.days), people, prefs, updated_at: new Date().toISOString() };
       msg('plan-msg', ''); renderPlan();
     } catch (e) { msg('plan-msg', errText(e)); }
   });
@@ -635,7 +766,7 @@ $('f-plan').addEventListener('submit', (ev) => {
 
 /* ---------- recipe ---------- */
 for (const d of POPULAR) $('r-chips').append(el('button', { class: 'chip', type: 'button', onclick: () => askRecipe(d) }, d));
-function askRecipe(dish) { tab('recipe'); $('r-dish').value = dish; $('f-recipe').requestSubmit(); scrollTo({ top: 0, behavior: 'smooth' }); }
+function askRecipe(dish, fast) { tab('recipe'); $('r-dish').value = dish; if (fast !== undefined) $('r-fast').checked = fast; $('f-recipe').requestSubmit(); scrollTo({ top: 0, behavior: 'smooth' }); }
 $('f-recipe').addEventListener('submit', (ev) => {
   ev.preventDefault();
   const dish = $('r-dish').value.trim();
@@ -643,17 +774,18 @@ $('f-recipe').addEventListener('submit', (ev) => {
   $('recipe-out').replaceChildren(el('div', { class: 'empty' }, el('span', { class: 'spinner' }), ' بنجهّز طريقة ' + dish + '...'));
   busy($('b-recipe'), async () => {
     try {
-      const { recipe } = await api.ai({ action: 'recipe', dish });
-      renderRecipe(normalizeRecipe(recipe, dish)); msg('recipe-msg', '');
+      const { recipe } = await api.ai({ action: 'recipe', dish, fasting: $('r-fast').checked });
+      renderRecipe(normalizeRecipe(recipe, dish), $('r-fast').checked); msg('recipe-msg', '');
     } catch (e) { $('recipe-out').replaceChildren(); msg('recipe-msg', errText(e)); }
   });
 });
-function renderRecipe(r) {
+function renderRecipe(r, fast) {
   const names = state.items.map((i) => i.name);
   const have = r.ingredients.filter((i) => inPantry(i.item, names)).length;
   $('recipe-out').replaceChildren(el('article', { class: 'card recipe' },
     el('div', {}, el('h2', {}, r.name), r.summary ? el('p', { class: 'muted', style: 'margin:6px 0 0' }, r.summary) : null),
     el('div', { class: 'meta' },
+      fast ? el('span', { class: 'pill fast' }, 'صيامي') : null,
       r.time ? el('span', { class: 'pill' }, 'الوقت: ' + r.time) : null,
       r.servings ? el('span', { class: 'pill' }, 'تكفي ' + r.servings + ' أفراد') : null,
       el('span', { class: 'pill' + (have < r.ingredients.length ? ' miss' : '') }, 'عندك ' + have + ' من ' + r.ingredients.length + ' مكونات'),
@@ -664,6 +796,80 @@ function renderRecipe(r) {
       el('div', {}, el('h3', { style: 'margin-bottom:8px' }, 'طريقة العمل'),
         el('ol', { class: 'steps' }, r.steps.map((s) => el('li', {}, el('span', {}, s)))))),
     r.tips.length ? el('div', { class: 'note ok' }, el('b', {}, 'نصايح: '), r.tips.join(' · ')) : null));
+}
+
+/* ---------- fasting week ---------- */
+function renderFastWeek(week) {
+  const box = $('fast-week');
+  const fasting = week.filter((d) => state.fasts.has(d));
+  box.hidden = !fasting.length;
+  if (!fasting.length) return;
+  const names = [...new Set(fasting.map((d) => state.fasts.get(d).fast))].join(' و');
+  box.replaceChildren(el('div', { class: 'note', style: 'background:var(--spice-soft);color:var(--spice)' },
+    el('b', {}, 'الأسبوع ده فيه ' + (fasting.length === 1 ? 'يوم صيامي واحد' : fasting.length === 2 ? 'يومين صيامي' : fasting.length + ' أيام صيامي') + ' (' + names + '): '),
+    fasting.map((d) => DAYS[week.indexOf(d)]).join('، '),
+    el('div', { class: 'small', style: 'margin-top:4px' }, 'المواعيد محسوبة من نتيجة جوجل (عيد الميلاد والقيامة القبطي).')));
+}
+
+/* ---------- kids ---------- */
+function renderKids() {
+  const box = $('kids-list'); box.replaceChildren();
+  if (!state.kids.length) { box.append(el('div', { class: 'empty' }, 'لسه مفيش أطفال متسجلين. ضيف أول طفل باسمه وتاريخ ميلاده من الفورم اللي تحت.')); return; }
+  const today = todayISO(); const fastToday = state.fasts.has(today);
+  for (const k of state.kids) {
+    const months = ageInMonths(k.birth_date, today);
+    const fastBox = el('input', { type: 'checkbox' }); fastBox.checked = fastToday && months >= 24;
+    box.append(el('div', { class: 'card kid', 'data-kid': k.id },
+      el('div', { class: 'who' }, el('b', {}, k.name), ' ', el('span', { class: 'pill' }, ageText(months)),
+        k.notes ? el('div', { class: 'muted small' }, k.notes) : null),
+      el('label', { class: 'check' }, fastBox, 'صيامي'),
+      el('button', { class: 'btn primary', type: 'button', onclick: (e) => suggestKid(k, fastBox.checked, e.currentTarget) }, 'اقترح أكل'),
+      el('button', { class: 'btn icon ghost', type: 'button', 'aria-label': 'امسح ' + k.name, onclick: (e) => askDeleteKid(k, e.currentTarget) }, '✕')));
+  }
+}
+function askDeleteKid(k, btn) {
+  const card = btn.closest('.kid');
+  card.replaceChildren(el('span', { class: 'who' }, 'تمسح ' + k.name + '؟'),
+    el('button', { class: 'btn danger', type: 'button', onclick: async () => {
+      try { await api.removeKid(k.id); state.kids = state.kids.filter((x) => x.id !== k.id); renderKids(); }
+      catch (e) { msg('kids-msg', errText(e)); renderKids(); }
+    } }, 'امسح'),
+    el('button', { class: 'btn ghost', type: 'button', onclick: renderKids }, 'لا'));
+}
+$('k-birth').max = todayISO();
+$('f-kid').addEventListener('submit', (ev) => {
+  ev.preventDefault();
+  const k = { name: $('k-kname').value.trim(), birth_date: $('k-birth').value, notes: $('k-notes').value.trim() || null };
+  if (!k.name || !k.birth_date) return;
+  busy(ev.target.querySelector('button[type=submit]'), async () => {
+    try {
+      await api.addKid(state.kitchen.id, k);
+      state.kids = await api.kids(state.kitchen.id);
+      $('k-kname').value = ''; $('k-birth').value = ''; $('k-notes').value = '';
+      msg('kids-msg', ''); renderKids();
+    } catch (e) { msg('kids-msg', errText(e)); }
+  });
+});
+function suggestKid(k, fasting, btn) {
+  $('kids-out').replaceChildren(el('div', { class: 'empty' }, el('span', { class: 'spinner' }), ' بنجهّز أكل مناسب لـ ' + k.name + '...'));
+  busy(btn, async () => {
+    try {
+      const r = await api.ai({ action: 'kids', kid_id: k.id, fasting });
+      const res = normalizeKidMeals(r);
+      msg('kids-msg', '');
+      $('kids-out').replaceChildren(el('div', { style: 'display:grid;gap:14px' },
+        el('h3', {}, 'أكل مناسب لـ ' + k.name + ' (' + ageText(ageInMonths(k.birth_date, todayISO())) + ')' + (fasting ? ' · صيامي' : '')),
+        res.avoid.length ? el('div', { class: 'note err' }, el('b', {}, 'يتجنب: '), res.avoid.join(' · ')) : null,
+        el('div', { class: 'kmeals' }, res.meals.map((m) => el('article', { class: 'card kmeal' },
+          el('div', { class: 'meta' }, m.meal ? el('span', { class: 'pill' }, m.meal) : null, m.portion ? el('span', { class: 'muted small' }, 'الكمية: ' + m.portion) : null),
+          el('h3', {}, m.name),
+          m.note ? el('p', { class: 'muted small', style: 'margin:0' }, m.note) : null,
+          el('ul', { class: 'ings' }, m.ingredients.map((i) => el('li', {}, el('span', {}, i.item), el('span', { class: 'muted' }, i.amount)))),
+          el('ol', {}, m.steps.map((s) => el('li', {}, s))),
+          el('a', { class: 'btn yt', href: youtubeUrl(m.name + ' للأطفال'), target: '_blank', rel: 'noopener' }, '▶ يوتيوب')))),
+        res.tips.length ? el('div', { class: 'note ok' }, el('b', {}, 'نصايح: '), res.tips.join(' · ')) : null));
+    } catch (e) { $('kids-out').replaceChildren(); msg('kids-msg', errText(e)); }
+  });
 }
 
 /* ---------- start ---------- */
